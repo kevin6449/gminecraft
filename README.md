@@ -1,5 +1,12 @@
 # ⛏️ GMinecraft — Web 3D 體素沙盒世界
 
+[![Built with Gemini 4 Argon](https://img.shields.io/badge/Built%20with-Gemini%204%20Argon-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/)
+[![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)](https://threejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+
+> 🤖 **本專案由 `Gemini 4 Argon` 協助開發** — 從 3D 體素引擎、地形演算法、物理碰撞、實體 AI 到 UI 與合成系統皆由 AI 生成與建構。
+
 使用 **Three.js** 與 **TypeScript** 打造的瀏覽器 3D 體素沙盒遊戲（Voxel Sandbox），支援**創造模式**與**生存模式**雙模式切換、多生態系地形生成、動態日夜光影與環境光遮蔽（AO）、可引爆 TNT、動物與夜間怪物 AI，以及完整背包合成與世界存檔匯出入功能。
 
 🌐 **線上試玩 (GitHub Pages)**：[https://kevin6449.github.io/gminecraft/](https://kevin6449.github.io/gminecraft/)
