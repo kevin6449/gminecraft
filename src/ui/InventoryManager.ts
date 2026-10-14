@@ -1,6 +1,7 @@
-import { BlockId, CRAFTING_RECIPES, CraftingRecipe, getItemDef, ITEM_REGISTRY } from '../world/BlockRegistry';
+import { BlockId, CRAFTING_RECIPES, CraftingRecipe, getBlockMaterialLabel, getItemDef, ITEM_REGISTRY } from '../world/BlockRegistry';
 import { TextureAtlas } from '../world/TextureAtlas';
 import { SoundManager } from '../audio/SoundManager';
+import { getItemName, getRecipeDesc, t } from '../i18n/I18nManager';
 
 export interface InventorySlot {
   itemId: BlockId;
@@ -221,7 +222,7 @@ export class InventoryManager {
 
   public craft(recipe: CraftingRecipe): void {
     if (!this.canCraft(recipe)) {
-      this.onToast('⚠️ 材料不足！請先挖掘收集所需資源');
+      this.onToast(t('toastCraftFail'));
       return;
     }
     if (!this.isCreativeMode()) {
@@ -231,8 +232,8 @@ export class InventoryManager {
     }
     this.addItem(recipe.outputId, recipe.outputCount);
     this.sound.playCraft();
-    const outDef = getItemDef(recipe.outputId);
-    this.onToast(`⚒️ 成功合成：${outDef.name} ×${recipe.outputCount}`);
+    const outName = getItemName(recipe.outputId) || getItemDef(recipe.outputId).name;
+    this.onToast(t('toastCraftSuccess', { name: outName, count: recipe.outputCount }));
     this.renderHotbar();
     this.renderModalContent();
   }
@@ -267,7 +268,8 @@ export class InventoryManager {
 
     const currentId = this.getSelectedItemId();
     const def = getItemDef(currentId);
-    this.selectedLabelEl.textContent = currentId === BlockId.Air ? '空手 (Hand)' : def.name;
+    this.selectedLabelEl.textContent =
+      currentId === BlockId.Air ? t('emptyHand') : getItemName(currentId) || def.name;
   }
 
   public renderModalContent(): void {
@@ -292,22 +294,25 @@ export class InventoryManager {
       this.atlas.renderItemIconToCanvas(item.id, icon);
       card.appendChild(icon);
 
+      const itemName = getItemName(item.id) || item.name;
       const nameEl = document.createElement('div');
       nameEl.className = 'item-name';
-      nameEl.textContent = item.name;
+      nameEl.textContent = itemName;
       card.appendChild(nameEl);
 
       const tagEl = document.createElement('div');
       tagEl.className = 'item-tag';
       tagEl.textContent = item.isBlock
-        ? `${item.materialAttr ?? '方塊'} · 耐久 ${item.hardness}s`
+        ? `${getBlockMaterialLabel(item)} · ${t('tagHardness', { sec: item.hardness })}`
         : item.toolType
-        ? `${item.materialAttr ?? '工具'} · 傷害 ${item.attackDamage ?? 2}${
-            item.toolMultiplier && item.toolType !== 'sword' ? ` · 效率 ${item.toolMultiplier}x` : ''
+        ? `${t('tagTool')} · ${t('tagDamage', { dmg: item.attackDamage ?? 2 })}${
+            item.toolMultiplier && item.toolType !== 'sword'
+              ? ` · ${t('tagEfficiency', { mult: item.toolMultiplier })}`
+              : ''
           }`
         : item.foodRestore
-        ? '食物'
-        : '材料';
+        ? t('tagFood')
+        : t('tagMaterial');
       card.appendChild(tagEl);
 
       card.addEventListener('click', () => {
@@ -319,9 +324,10 @@ export class InventoryManager {
           this.sound.playPop();
           this.renderHotbar();
           this.onHotbarChange?.();
-          this.onToast(`📦 已將「${item.name}」放入快捷欄第 ${this.selectedIndex + 1} 格`);
+          const currentName = getItemName(item.id) || item.name;
+          this.onToast(t('toastEquipSlot', { name: currentName, slot: this.selectedIndex + 1 }));
         } else {
-          this.onToast('💡 生存模式下請透過「生存合成配方」或挖掘方塊取得物品（按 M 可切換創造模式）');
+          this.onToast(t('toastSurvivalCatalogHint'));
         }
       });
 
@@ -332,6 +338,7 @@ export class InventoryManager {
     this.craftingListEl.innerHTML = '';
     for (const recipe of CRAFTING_RECIPES) {
       const outDef = getItemDef(recipe.outputId);
+      const outName = getItemName(recipe.outputId) || outDef.name;
       const craftable = this.canCraft(recipe);
 
       const card = document.createElement('div');
@@ -347,10 +354,10 @@ export class InventoryManager {
       const info = document.createElement('div');
       const title = document.createElement('div');
       title.className = 'craft-title';
-      title.textContent = `${outDef.name} ×${recipe.outputCount}`;
+      title.textContent = `${outName} ×${recipe.outputCount}`;
       const desc = document.createElement('div');
       desc.className = 'craft-desc';
-      desc.textContent = recipe.description;
+      desc.textContent = getRecipeDesc(recipe.id, recipe.description);
       info.appendChild(title);
       info.appendChild(desc);
       header.appendChild(info);
@@ -359,11 +366,11 @@ export class InventoryManager {
       const ingBox = document.createElement('div');
       ingBox.className = 'craft-ingredients';
       const ingTexts = recipe.ingredients.map((ing) => {
-        const ingDef = getItemDef(ing.itemId);
+        const ingName = getItemName(ing.itemId) || getItemDef(ing.itemId).name;
         const have = this.getItemTotalCount(ing.itemId);
-        return `${ingDef.name} ${have}/${ing.count}`;
+        return `${ingName} ${have}/${ing.count}`;
       });
-      ingBox.textContent = `材料：${ingTexts.join(' + ')}`;
+      ingBox.textContent = `${t('ingredientsPrefix')}${ingTexts.join(' + ')}`;
       card.appendChild(ingBox);
 
       card.addEventListener('click', () => this.craft(recipe));
@@ -378,19 +385,20 @@ export class InventoryManager {
 
       if (slot.itemId !== BlockId.Air && slot.count > 0) {
         const def = getItemDef(slot.itemId);
+        const itemName = getItemName(slot.itemId) || def.name;
         const icon = document.createElement('canvas');
         this.atlas.renderItemIconToCanvas(slot.itemId, icon);
         card.appendChild(icon);
 
         const nameEl = document.createElement('div');
         nameEl.className = 'item-name';
-        nameEl.textContent = `${def.name} ×${slot.count}`;
+        nameEl.textContent = `${itemName} ×${slot.count}`;
         card.appendChild(nameEl);
       } else {
         const emptyEl = document.createElement('div');
         emptyEl.className = 'item-tag';
         emptyEl.style.padding = '18px 0';
-        emptyEl.textContent = '空儲物格';
+        emptyEl.textContent = t('emptyBagSlot');
         card.appendChild(emptyEl);
       }
 

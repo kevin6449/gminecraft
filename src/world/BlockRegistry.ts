@@ -1,3 +1,5 @@
+import { t } from '../i18n/I18nManager';
+
 export enum BlockId {
   Air = 0,
   Grass = 1,
@@ -1182,28 +1184,30 @@ export function getItemDef(id: number): ItemDef {
   return ITEM_REGISTRY[id] || ITEM_REGISTRY[BlockId.Air];
 }
 
+export function getBlockMaterialLabel(def: ItemDef): string {
+  if (def.id === BlockId.Bedrock || def.hardness < 0) return t('attrBedrock');
+  if (def.id === BlockId.TNT) return t('attrTNT');
+  if (def.isDoor) return t('attrDoor');
+  if (def.soundType === 'stone') return t('attrStone');
+  if (def.soundType === 'wood') return t('attrWood');
+  if (def.soundType === 'glass') return t('attrGlass');
+  if (def.soundType === 'sand') return t('attrSand');
+  return t('attrGrass');
+}
+
 export function getBlockAttributeLabel(def: ItemDef): string {
   if (!def.isBlock) return '';
-  if (def.hardness < 0) return '基岩·不可破壞';
+  if (def.hardness < 0) return t('attrBedrock');
   const toolLabel =
     def.preferredTool === 'pickaxe'
-      ? '適用：十字鎬'
+      ? t('toolPickaxe')
       : def.preferredTool === 'axe'
-      ? '適用：斧頭'
+      ? t('toolAxe')
       : def.preferredTool === 'shovel'
-      ? '適用：鏟子'
-      : '適用：任意工具';
-  const matLabel =
-    def.materialAttr ??
-    (def.soundType === 'stone'
-      ? '岩質礦石'
-      : def.soundType === 'wood'
-      ? '木質結構'
-      : def.soundType === 'glass'
-      ? '結晶玻璃'
-      : def.soundType === 'sand'
-      ? '鬆散沙雪'
-      : '自然草土');
-  return `[${matLabel} · 韌度 ${def.hardness.toFixed(1)}s · ${toolLabel}]`;
+      ? t('toolShovel')
+      : t('toolAny');
+  const matLabel = getBlockMaterialLabel(def);
+  return `[${matLabel} · ${t('tagHardness', { sec: def.hardness.toFixed(1) })} · ${toolLabel}]`;
 }
+
 

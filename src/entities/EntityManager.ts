@@ -4,6 +4,7 @@ import { WorldManager } from '../world/WorldManager';
 import { SoundManager } from '../audio/SoundManager';
 import { InventoryManager } from '../ui/InventoryManager';
 import { SEA_LEVEL } from '../world/TerrainGenerator';
+import { getMobName, t } from '../i18n/I18nManager';
 
 interface Particle {
   mesh: THREE.Mesh;
@@ -531,10 +532,11 @@ export class EntityManager {
       }
       this.entityGroup.remove(mob.group);
       this.mobs = this.mobs.filter((m) => m.id !== mob.id);
+      const mobDisplayName = getMobName(mob.type);
       if (isBurnDamage) {
-        this.onToast(`☀️ ${mob.name} 在白天陽光下燃燒殆盡！掉落了戰利品`);
+        this.onToast(t('toastMobBurned', { name: mobDisplayName }));
       } else {
-        this.onToast(`⚔️ 擊敗了 ${mob.name}！掉落了戰利品`);
+        this.onToast(t('toastMobDefeated', { name: mobDisplayName }));
       }
     }
   }

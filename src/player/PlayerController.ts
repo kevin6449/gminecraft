@@ -5,6 +5,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { InventoryManager } from '../ui/InventoryManager';
 import { EntityManager } from '../entities/EntityManager';
 import { TextureAtlas } from '../world/TextureAtlas';
+import { getItemName, t } from '../i18n/I18nManager';
 
 export type GameMode = 'creative' | 'survival';
 
@@ -417,26 +418,20 @@ export class PlayerController {
     this.inventory.renderHotbar();
     this.onModeOrStatChange();
     this.onToast(
-      this.gameMode === 'creative'
-        ? '🛠️ 已切換為「創造模式」：無限方塊、方塊一擊即破、支援自由飛行'
-        : '⚔️ 已切換為「生存模式」：方塊具材質耐久屬性、資源收集與生命值挑戰'
+      this.gameMode === 'creative' ? t('toastCreativeMode') : t('toastSurvivalMode')
     );
   }
 
   public toggleFlying(): void {
     if (this.gameMode === 'survival') {
-      this.onToast('💡 生存模式無法飛行（按 M 切換至創造模式即可飛行）');
+      this.onToast(t('toastNoFlyInSurvival'));
       return;
     }
     this.isFlying = !this.isFlying;
     this.velocity.y = 0;
     this.highestAirY = this.position.y;
     this.onModeOrStatChange();
-    this.onToast(
-      this.isFlying
-        ? '🕊️ 已開啟自由飛行 (Space 上升 / Shift 下降 / 按住 Ctrl 加速飛行)'
-        : '🚶 已關閉飛行模式'
-    );
+    this.onToast(this.isFlying ? t('toastFlyOn') : t('toastFlyOff'));
   }
 
   public applyDamage(amount: number, knockback?: THREE.Vector3, isDrowning = false): void {
@@ -463,11 +458,7 @@ export class PlayerController {
       const spawnY = this.world.getSpawnHeight(0, 0);
       this.position.set(0.5, spawnY, 0.5);
       this.velocity.set(0, 0, 0);
-      this.onToast(
-        isDrowning
-          ? '💀 你在水面下待太久溺水身亡！已於出生點復活'
-          : '💀 你已重傷復活於出生點！'
-      );
+      this.onToast(isDrowning ? t('toastDeathDrown') : t('toastDeathNormal'));
     }
     this.onModeOrStatChange();
   }
@@ -589,7 +580,7 @@ export class PlayerController {
     }
 
     this.sound.playDoorToggle(nextOpen);
-    this.onToast(nextOpen ? '🚪 已打開橡木門（可自由通行）' : '🚪 已關上橡木門');
+    this.onToast(nextOpen ? t('toastDoorOpen') : t('toastDoorClose'));
   }
 
   private handleRightClick(): void {
@@ -610,7 +601,7 @@ export class PlayerController {
 
       if (targetId === BlockId.TNT) {
         this.entities.igniteTNT(bp.x, bp.y, bp.z);
-        this.onToast('🧨 TNT 已點燃！快退後！');
+        this.onToast(t('toastTntIgnited'));
         return;
       }
 
@@ -625,7 +616,7 @@ export class PlayerController {
     // 2. 若手持食物（烤豬排或蘋果），右鍵食用回復生命與飽食度
     if (heldDef.foodRestore) {
       if (this.gameMode === 'survival' && this.health >= this.maxHealth && this.hunger >= this.maxHunger) {
-        this.onToast('❤️ 生命值與飽食度已滿！');
+        this.onToast(t('toastFullHealth'));
         return;
       }
       if (this.inventory.consumeSelected(1)) {
@@ -633,7 +624,8 @@ export class PlayerController {
         this.hunger = Math.min(this.maxHunger, this.hunger + heldDef.foodRestore);
         this.sound.playPop();
         this.onModeOrStatChange();
-        this.onToast(`🍖 食用了 ${heldDef.name}，回復生命與體力！`);
+        const foodName = getItemName(heldId) || heldDef.name;
+        this.onToast(t('toastAteFood', { name: foodName }));
       }
       return;
     }
@@ -650,7 +642,7 @@ export class PlayerController {
       if (place.y + 1 >= 64) return;
       const aboveId = this.world.getBlock(place.x, place.y + 1, place.z);
       if (aboveId !== BlockId.Air && !getItemDef(aboveId).fluid) {
-        this.onToast('⚠️ 門需要上下 2 格高度空間才能放置！');
+        this.onToast(t('toastDoorNeedSpace'));
         return;
       }
       if (
@@ -663,7 +655,7 @@ export class PlayerController {
         this.world.setBlock(place.x, place.y, place.z, BlockId.OakDoor);
         this.world.setBlock(place.x, place.y + 1, place.z, BlockId.OakDoorTop);
         this.sound.playPlace('wood');
-        this.onToast('🚪 已放置橡木門（對門按右鍵即可開門/關門）');
+        this.onToast(t('toastDoorPlaced'));
       }
       return;
     }
@@ -786,7 +778,7 @@ export class PlayerController {
         this.drownTimer += dt;
         if (this.drownTimer >= 0.85) {
           this.drownTimer = 0;
-          this.onToast('🫧 氧氣耗盡！頭在水面下待太久正在溺水！');
+          this.onToast(t('toastDrowning'));
           this.applyDamage(3, undefined, true);
         }
       }

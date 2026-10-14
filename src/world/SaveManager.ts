@@ -3,6 +3,7 @@ import { WorldManager } from './WorldManager';
 import { PlayerController, GameMode } from '../player/PlayerController';
 import { InventoryManager, InventorySlot } from '../ui/InventoryManager';
 import { SkyAndLighting } from './SkyAndLighting';
+import { t } from '../i18n/I18nManager';
 
 const STORAGE_KEY = 'gminecraft_save_v1';
 
@@ -66,7 +67,7 @@ export class SaveManager {
       this.inventory.initDefaultInventory();
       this.inventory.renderHotbar();
       this.onStateRestored();
-      this.onToast(`🌍 已生成全新世界！(種子碼：${newSeed})`);
+      this.onToast(t('toastNewWorld', { seed: newSeed }));
     });
   }
 
@@ -92,7 +93,7 @@ export class SaveManager {
       const data = this.serialize();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       if (notify) {
-        this.onToast(`💾 世界已儲存！(包含 ${data.modifiedBlocks.length} 處方塊變更)`);
+        this.onToast(t('toastWorldSaved', { count: data.modifiedBlocks.length }));
       }
     } catch (err) {
       console.error('儲存失敗:', err);
@@ -151,7 +152,7 @@ export class SaveManager {
     a.download = `gminecraft-world-${data.seed}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    this.onToast('📤 已匯出世界 JSON 檔案！');
+    this.onToast(t('toastWorldExported'));
   }
 
   public importJSON(file: File): void {
@@ -161,9 +162,9 @@ export class SaveManager {
         const data = JSON.parse(String(reader.result)) as WorldSaveData;
         this.applySaveData(data);
         this.saveToLocal(false);
-        this.onToast(`📥 成功匯入世界！(種子碼：${data.seed})`);
+        this.onToast(t('toastWorldImported', { seed: data.seed }));
       } catch {
-        this.onToast('⚠️ 匯入失敗：檔案格式不正確');
+        this.onToast(t('toastImportFailed'));
       }
     };
     reader.readAsText(file);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { t } from '../i18n/I18nManager';
 
 export class SkyAndLighting {
   public timeOfDay = 0.23; // 0.25 為正午，0.75 為午夜
@@ -162,17 +163,17 @@ export class SkyAndLighting {
   public toggleDayNight(): string {
     if (this.isNight()) {
       this.timeOfDay = 0.23; // 切換至晴朗正午
-      return '☀️ 已切換為晴朗白天';
+      return t('toastDay');
     } else {
       this.timeOfDay = 0.73; // 切換至星光夜晚
-      return '🌙 已切換為星光夜晚';
+      return t('toastNight');
     }
   }
 
   public getTimeLabel(): string {
     const h = Math.sin(this.timeOfDay * Math.PI * 2);
-    if (h > 0.35) return '☀️ 正午';
-    if (h >= 0) return '🌅 黃昏/黎明';
-    return '🌙 深夜';
+    if (h > 0.35) return t('timeNoon');
+    if (h >= 0) return t('timeSunset');
+    return t('timeNight');
   }
 }

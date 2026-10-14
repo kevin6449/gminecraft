@@ -200,24 +200,35 @@ kbd {
 .quick-actions {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-.quick-actions button {
+.quick-actions button,
+.quick-actions .lang-select {
   background: rgba(30, 41, 59, 0.9);
   color: #f1f5f9;
   border: 2px solid #64748b;
   padding: 4px 8px;
   font-size: 12px;
   font-weight: bold;
+  font-family: inherit;
   cursor: pointer;
   box-shadow: 0 2px 0 #0f172a;
   transition: transform 0.1s, border-color 0.15s;
+  outline: none;
 }
 
-.quick-actions button:hover {
+.quick-actions button:hover,
+.quick-actions .lang-select:hover {
   border-color: #facc15;
   color: #fef08a;
   transform: translateY(-1px);
+}
+
+.lang-select option {
+  background: #0f172a;
+  color: #f8fafc;
 }
 
 /* 通知吐司 */

@@ -4,6 +4,7 @@ import { PlayerController } from '../player/PlayerController';
 import { SkyAndLighting } from '../world/SkyAndLighting';
 import { EntityManager } from '../entities/EntityManager';
 import { CHUNK_SIZE } from '../world/TerrainGenerator';
+import { getBiomeLabel, getItemName, t } from '../i18n/I18nManager';
 
 export class HUDAndMinimap {
   private modeBadgeEl: HTMLElement;
@@ -89,10 +90,10 @@ export class HUDAndMinimap {
 
   public refreshStatusBars(): void {
     const isSurvival = this.player.gameMode === 'survival';
-    const flyTag = this.player.isFlying ? ' · 🕊️ 飛行中' : '';
+    const flyTag = this.player.isFlying ? t('flyingSuffix') : '';
     this.modeBadgeEl.textContent = isSurvival
-      ? '⚔️ 生存模式 (Survival)'
-      : `🛠️ 創造模式 (Creative)${flyTag}`;
+      ? t('modeSurvival')
+      : `${t('modeCreative')}${flyTag}`;
     this.modeBadgeEl.classList.toggle('survival', isSurvival);
 
     // 創造模式下不用顯示血條與狀態列；僅在生存模式下顯示
@@ -136,7 +137,8 @@ export class HUDAndMinimap {
       this.miningBarEl.style.width = `${pct}%`;
       const targetDef = getItemDef(this.player.currentHit.blockId);
       const attrLabel = getBlockAttributeLabel(targetDef);
-      this.miningLabelEl.textContent = `⛏️ ${targetDef.name} 【${attrLabel}】 (${pct}%)`;
+      const itemName = getItemName(targetDef.id) || targetDef.name;
+      this.miningLabelEl.textContent = `⛏️ ${itemName} ${attrLabel} (${pct}%)`;
     } else {
       this.miningContainerEl.classList.add('hidden');
     }
@@ -146,20 +148,22 @@ export class HUDAndMinimap {
     const py = this.player.position.y;
     const pz = this.player.position.z;
     const biome = this.world.getBiomeAt(px, pz);
+    const biomeText = getBiomeLabel(biome);
 
     this.dbgFpsEl.textContent = String(fps);
     this.dbgTimeEl.textContent = this.sky.getTimeLabel();
     this.dbgXyzEl.textContent = `${px.toFixed(1)}, ${py.toFixed(1)}, ${pz.toFixed(1)}`;
     this.dbgChunkEl.textContent = `${Math.floor(px / CHUNK_SIZE)}, ${Math.floor(pz / CHUNK_SIZE)}`;
-    this.dbgBiomeEl.textContent = biome;
-    this.minimapBiomeEl.textContent = `🧭 ${biome}`;
+    this.dbgBiomeEl.textContent = biomeText;
+    this.minimapBiomeEl.textContent = `🧭 ${biomeText}`;
 
     if (this.player.currentHit && this.player.currentHit.hit) {
       const bDef = getItemDef(this.player.currentHit.blockId);
       const bp = this.player.currentHit.blockPos;
-      this.dbgTargetEl.textContent = `${bDef.name} [${getBlockAttributeLabel(bDef)}] (${bp.x}, ${bp.y}, ${bp.z})`;
+      const itemName = getItemName(bDef.id) || bDef.name;
+      this.dbgTargetEl.textContent = `${itemName} ${getBlockAttributeLabel(bDef)} (${bp.x}, ${bp.y}, ${bp.z})`;
     } else {
-      this.dbgTargetEl.textContent = '無';
+      this.dbgTargetEl.textContent = t('dbgNone');
     }
 
     this.dbgEntitiesEl.textContent = String(this.entities.getTotalEntityCount());

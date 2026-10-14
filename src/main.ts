@@ -9,6 +9,14 @@ import { EntityManager } from './entities/EntityManager';
 import { PlayerController } from './player/PlayerController';
 import { HUDAndMinimap } from './ui/HUDAndMinimap';
 import { SaveManager } from './world/SaveManager';
+import {
+  applyStaticDOMTranslations,
+  Locale,
+  onLocaleChange,
+  setLocale,
+  syncLanguageSelectors,
+  t,
+} from './i18n/I18nManager';
 
 class GMinecraftGame {
   private renderer: THREE.WebGLRenderer;
@@ -32,6 +40,9 @@ class GMinecraftGame {
   private autoSaveTimer = 0;
 
   constructor() {
+    applyStaticDOMTranslations();
+    syncLanguageSelectors();
+
     const container = document.getElementById('game-container')!;
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -80,6 +91,12 @@ class GMinecraftGame {
 
     this.hud = new HUDAndMinimap(this.world, this.player, this.sky, this.entities);
     hudRef = this.hud;
+
+    onLocaleChange(() => {
+      this.hud.refreshStatusBars();
+      this.inventory.renderHotbar();
+      this.inventory.renderModalContent();
+    });
 
     this.saveManager = new SaveManager(
       this.world,
@@ -166,7 +183,14 @@ class GMinecraftGame {
 
     document.getElementById('btn-spawn-tnt-menu')?.addEventListener('click', () => {
       this.inventory.addItem(BlockId.TNT, 16);
-      this.hud.showToast('🧨 已獲得 16 個 TNT 炸藥！');
+      this.hud.showToast(t('toastGiveTnt'));
+    });
+
+    // 多國語言切換選單（右上角 HUD 與暫停選單同步）
+    document.querySelectorAll<HTMLSelectElement>('.lang-select').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        setLocale(sel.value as Locale);
+      });
     });
   }
 
