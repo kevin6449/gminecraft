@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GMinecraft — 3D 體素沙盒世界</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="game-container"></div>
+
+    <!-- 準星 -->
+    <div id="crosshair">
+      <div class="ch-h"></div>
+      <div class="ch-v"></div>
+    </div>
+
+    <!-- 水下濾鏡 -->
+    <div id="underwater-overlay" class="hidden"></div>
+    <!-- 受傷紅閃濾鏡 -->
+    <div id="damage-overlay" class="hidden"></div>
+
+    <!-- 左上角狀態與快捷提示 -->
+    <div id="top-left-hud">
+      <div class="mode-badge" id="mode-badge">🛠️ 創造模式 (Creative)</div>
+      <div class="controls-hint">
+        <span><kbd>WASD</kbd> 移動 (<kbd>Ctrl</kbd> 衝刺/飛行加速)</span>
+        <span><kbd>Space</kbd> 跳躍 / 水中上浮 / 雙擊飛行</span>
+        <span><kbd>左鍵</kbd> 破壞方塊(創造一擊破/生存依屬性) / 攻擊</span>
+        <span><kbd>右鍵</kbd> 放置 / 開關門 / 點燃TNT / 進食</span>
+        <span><kbd>E</kbd> 背包與合成</span>
+        <span><kbd>M</kbd> 切換創造/生存</span>
+        <span><kbd>F</kbd> 飛行開關</span>
+        <span><kbd>T</kbd> 切換日夜(天亮殭屍自燃)</span>
+        <span><kbd>F3</kbd> 除錯資訊</span>
+      </div>
+      <!-- F3 Debug 面板 -->
+      <div id="debug-panel">
+        <div>FPS: <span id="dbg-fps">60</span> | 時間: <span id="dbg-time">正午</span></div>
+        <div>座標 XYZ: <span id="dbg-xyz">0, 0, 0</span></div>
+        <div>區塊 Chunk: <span id="dbg-chunk">0, 0</span> | 生態系: <span id="dbg-biome">翠綠平原</span></div>
+        <div>目標方塊: <span id="dbg-target">無</span></div>
+        <div>實體數量: <span id="dbg-entities">0</span> | 已修改方塊: <span id="dbg-modified">0</span></div>
+      </div>
+    </div>
+
+    <!-- 右上角小地圖與快捷按鈕 -->
+    <div id="top-right-hud">
+      <div class="minimap-wrapper">
+        <canvas id="minimap-canvas" width="140" height="140"></canvas>
+        <div class="minimap-label" id="minimap-biome-label">翠綠平原</div>
+      </div>
+      <div class="quick-actions">
+        <button id="btn-save-world" title="儲存世界進度">💾 存檔</button>
+        <button id="btn-export-world" title="匯出世界 JSON">📤 匯出</button>
+        <button id="btn-import-world" title="匯入世界 JSON">📥 匯入</button>
+        <button id="btn-reset-world" title="重新生成新世界">🔄 新世界</button>
+        <input type="file" id="import-file-input" accept=".json" class="hidden" />
+      </div>
+    </div>
+
+    <!-- 中央訊息通知吐司 -->
+    <div id="toast-message" class="hidden"></div>
+
+    <!-- 底部狀態列（氧氣條位於血條上方、飽食度、方塊屬性挖掘進度、9格快捷欄） -->
+    <div id="bottom-hud">
+      <div id="mining-progress-container" class="hidden">
+        <div id="mining-progress-label">挖掘中...</div>
+        <div class="mining-bar-bg">
+          <div id="mining-progress-bar"></div>
+        </div>
+      </div>
+
+      <div id="survival-bars" class="hidden">
+        <div class="survival-row">
+          <div id="oxygen-bar" class="stat-bar hidden"></div>
+        </div>
+        <div class="survival-row">
+          <div id="hearts-bar" class="stat-bar"></div>
+          <div id="hunger-bar" class="stat-bar"></div>
+        </div>
+      </div>
+
+      <div id="selected-item-label">草地方塊</div>
+      <div id="hotbar"></div>
+    </div>
+
+    <!-- E 鍵背包與合成介面 -->
+    <div id="inventory-modal" class="modal-backdrop hidden">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 id="inventory-title">🎒 背包與工作台合成</h2>
+          <div class="modal-tabs">
+            <button class="tab-btn active" data-tab="catalog">📦 創造物品庫</button>
+            <button class="tab-btn" data-tab="crafting">⚒️ 生存合成配方</button>
+            <button class="tab-btn" data-tab="bag">🎒 背包儲物格</button>
+          </div>
+          <button id="btn-close-inventory" class="close-btn">✕ (E / ESC)</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- 創造物品庫分頁 -->
+          <div id="tab-catalog" class="tab-content active">
+            <p class="tab-desc">點擊任一方塊或工具，即可直接裝備至下方目前選中的快捷欄格位（或按數字鍵 1~9 指派）：</p>
+            <div id="catalog-grid" class="item-grid"></div>
+          </div>
+
+          <!-- 生存合成配方分頁 -->
+          <div id="tab-crafting" class="tab-content hidden">
+            <p class="tab-desc">收集原木、石頭、礦物與沙子後，點擊可合成的配方即可製作工具、武器、光源與 TNT：</p>
+            <div id="crafting-list" class="crafting-grid"></div>
+          </div>
+
+          <!-- 背包儲物格分頁 -->
+          <div id="tab-bag" class="tab-content hidden">
+            <p class="tab-desc">點擊背包內的物品可與當前選中的快捷欄格位交換位置：</p>
+            <div id="bag-grid" class="item-grid"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="footer-tip">提示：按 <kbd>1</kbd>~<kbd>9</kbd> 可快速切換底部快捷欄目標格位</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 初始開始 / 暫停選單畫面 -->
+    <div id="pause-overlay" class="modal-backdrop">
+      <div class="start-card">
+        <div class="logo-title">⛏️ GMinecraft</div>
+        <div class="logo-subtitle">Web 3D 體素沙盒世界 · 創造與生存雙模式</div>
+
+        <div class="feature-tags">
+          <span>🌲 多生態無縫區塊</span>
+          <span>🌓 動態日夜與環境光 AO</span>
+          <span>🧨 可引爆 TNT 炸藥</span>
+          <span>🐷 方塊動物與夜晚怪物</span>
+          <span>⚒️ 挖掘掉落與合成系統</span>
+        </div>
+
+        <div class="start-actions">
+          <button id="btn-resume-game" class="primary-btn">▶️ 點擊進入遊戲 (鎖定游標)</button>
+          <div class="sub-actions">
+            <button id="btn-toggle-mode-menu" class="secondary-btn">切換模式：創造 / 生存</button>
+            <button id="btn-toggle-time-menu" class="secondary-btn">切換時間：白天 / 夜晚</button>
+            <button id="btn-spawn-tnt-menu" class="secondary-btn">給予 TNT ×16</button>
+          </div>
+        </div>
+
+        <div class="controls-table">
+          <div><b>移動 / 衝刺加速</b>：W A S D / 空白鍵跳躍 / 按住 <kbd>Ctrl</kbd> 衝刺與飛行加速</div>
+          <div><b>自由飛行</b>：按 <kbd>F</kbd> 或雙擊空白鍵 (Space 上升 / Shift 下降 / Ctrl 加速)</div>
+          <div><b>破壞 / 攻擊</b>：滑鼠左鍵 (創造模式一擊破 / 生存模式依材質與工具挖掘)</div>
+          <div><b>放置 / 互動</b>：滑鼠右鍵 (開關門 / 對 TNT 按右鍵點燃，左鍵安全拆除)</div>
+          <div><b>背包與合成</b>：按 <kbd>E</kbd> 開啟物品庫與合成表（含木/石/鐵/鑽石全套工具）</div>
+          <div><b>模式 / 日夜</b>：按 <kbd>M</kbd> 切換創造或生存 / 按 <kbd>T</kbd> 切換日夜</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
