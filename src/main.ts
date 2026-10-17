@@ -143,13 +143,21 @@ class GMinecraftGame {
     resumeBtn.addEventListener('click', () => {
       this.inventory.toggleModal(false);
       pauseOverlay.classList.add('hidden');
-      document.body.requestPointerLock?.();
+      try {
+        Promise.resolve(document.body.requestPointerLock?.()).catch(() => {});
+      } catch {
+        // ignore pointer lock restriction
+      }
     });
 
     // 點擊畫面畫布時也能直接鎖定滑鼠游標進入遊戲
     this.renderer.domElement.addEventListener('click', () => {
       if (!this.inventory.isModalOpen && pauseOverlay.classList.contains('hidden')) {
-        document.body.requestPointerLock?.();
+        try {
+          Promise.resolve(document.body.requestPointerLock?.()).catch(() => {});
+        } catch {
+          // ignore pointer lock restriction
+        }
       }
     });
 
